@@ -1,9 +1,11 @@
 import request from 'request';
 import urlJoin from 'url-join';
-import ExtendableError from 'es6-error';
 
+import Errors from './errors';
+
+/* Move to Errors Class */
 const ERRORS = {
-  13: class UnknownError extends ExtendableError {}
+  13: Errors.UnknownError
 };
 
 class SeleniumSession {
@@ -12,6 +14,13 @@ class SeleniumSession {
     this.sessionId = sessionId;
     this.values = values;
   }
+
+  navigate(url) {
+    return this.parent.postSelenium(
+      '/session/' + this.sessionId + '/url',
+      { url }
+    );
+  }
 }
 
 export default class Selenium {
@@ -19,11 +28,11 @@ export default class Selenium {
     this.server = server;
   }
 
-  callSelenium(data) {
+  postSelenium(uri, data) {
     return new Promise((resolve, reject) => {
       request({
           method: 'POST',
-          url: urlJoin(this.server, '/session'),
+          url: urlJoin(this.server, uri),
           json: data
         },
         (err, httpResponse, body) => {
@@ -31,8 +40,12 @@ export default class Selenium {
           if (httpResponse.statusCode !== 200) {
             return reject(new Error(body));
           }
-          if (ERRORS[body.status]) {
-            return reject(new ERRORS[body.status](body.value.message));
+          if (body.status) {
+            if (ERRORS[body.status]) {
+              return reject(new ERRORS[body.status](body.value.message));
+            }
+            /* Unhandled Error */
+            return reject(new Error(body.value.message));
           }
           return resolve(body);
         }
@@ -45,7 +58,7 @@ export default class Selenium {
     requiredCapabilities = {}
   ) {
     return new Promise((resolve, reject) => {
-      return this.callSelenium({ desiredCapabilities, requiredCapabilities })
+      this.postSelenium('/session', { desiredCapabilities, requiredCapabilities })
         .then((body) => {
           return resolve(new SeleniumSession(this, body.sessionId, body.value));
         })
