@@ -1,0 +1,22 @@
+{
+  "name": "saucelabs-selenium",
+  "version": "1.0.0",
+  "description": "Basic Library to talk to Selenium (ChromeDriver)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "mocha --compilers js:babel/register"
+  },
+  "author": "Gavin Mogan <npm@gavinmogan.com> (http://www.gavinmogan.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "es6-error": "^1.0.0",
+    "request": "^2.61.0",
+    "url-join": "0.0.1"
+  },
+  "devDependencies": {
+    "babel": "^5.8.21",
+    "chai": "^3.2.0",
+    "chai-as-promised": "^5.1.0",
+    "should": "^7.0.4"
+  }
+}
