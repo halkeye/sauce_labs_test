@@ -12,15 +12,14 @@ describe('Selenium', () => {
     beforeEach(function () {
       this.s = new Selenium();
     });
-    it('bad server url', function () {
+    it('bad server url', function (done) {
       this.s.server = 'http://localhost:9515/blah/';
       const promise = this.s.createSession();
-      return promise.should.be.rejectedWith(Error);
+      promise.should.be.rejectedWith(Error).and.notify(done);
     });
-    it('success', function () {
+    it('success', function (done) {
       const promise = this.s.createSession();
-      promise.should.eventually.be.a('object');
-      return promise;
+      promise.should.eventually.be.a('object').and.notify(done);
     });
   });
   describe('CreatedSession', function () {
@@ -39,6 +38,19 @@ describe('Selenium', () => {
     });
     it('navigate', function () {
       return this.session.navigate('http://www.google.com');
+    });
+    it('navigate and get title', function (done) {
+      const getTitle = function() {
+        const promise = this.session.title();
+        promise.should.eventually.equal("Google").and.notify(done);
+        promise.catch(function(err) {
+          console.log(err);
+          done(err);
+        });
+        return promise;
+      }.bind(this);
+      this.session.navigate('http://www.google.com')
+        .then(getTitle)
     });
   });
 });

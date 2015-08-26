@@ -16,10 +16,30 @@ class SeleniumSession {
   }
 
   navigate(url) {
-    return this.parent.postSelenium(
+    return this.parent.callSelenium(
       '/session/' + this.sessionId + '/url',
       { url }
     );
+  }
+
+  url() {
+    return this.parent.callSelenium(
+      '/session/' + this.sessionId + '/url',
+      null,
+      'GET'
+    ).then(function (body) {
+      return body.value;
+    });
+  }
+
+  title() {
+    return this.parent.callSelenium(
+      '/session/' + this.sessionId + '/title',
+      null,
+      'GET'
+    ).then(function (body) {
+      return body.value;
+    });
   }
 }
 
@@ -28,13 +48,17 @@ export default class Selenium {
     this.server = server;
   }
 
-  postSelenium(uri, data) {
+  callSelenium(uri, data, method = 'POST') {
     return new Promise((resolve, reject) => {
-      request({
-          method: 'POST',
-          url: urlJoin(this.server, uri),
-          json: data
-        },
+      const options = {
+        method,
+        url: urlJoin(this.server, uri)
+      };
+      if (data) {
+        options.json = data;
+      }
+      request(
+        options,
         (err, httpResponse, body) => {
           if (err) { return reject(err); }
           if (httpResponse.statusCode !== 200) {
@@ -47,6 +71,9 @@ export default class Selenium {
             /* Unhandled Error */
             return reject(new Error(body.value.message));
           }
+          if (typeof body === 'string') {
+            body = JSON.parse(body);
+          }
           return resolve(body);
         }
       );
@@ -57,12 +84,9 @@ export default class Selenium {
     desiredCapabilities = { 'browserName': 'safari'},
     requiredCapabilities = {}
   ) {
-    return new Promise((resolve, reject) => {
-      this.postSelenium('/session', { desiredCapabilities, requiredCapabilities })
-        .then((body) => {
-          return resolve(new SeleniumSession(this, body.sessionId, body.value));
-        })
-        .catch(reject);
-    });
+    return this.callSelenium('/session', { desiredCapabilities, requiredCapabilities })
+      .then((body) => {
+        return new SeleniumSession(this, body.sessionId, body.value);
+      });
   }
 }
