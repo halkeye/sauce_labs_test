@@ -122,7 +122,7 @@ class SeleniumSession {
 
   destroy() {
     return this.client.callSelenium(
-      '/session/' + this.sessionId + '/element',
+      '/session/' + this.sessionId,
       null,
       'DELETE'
     )
