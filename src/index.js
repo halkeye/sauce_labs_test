@@ -8,22 +8,63 @@ const ERRORS = {
   13: Errors.UnknownError
 };
 
+
+class SeleniumElement {
+  constructor(session, elementId) {
+    this.session = session;
+    this.elementId = elementId;
+    this.baseUrl = '/session/' + this.session.sessionId + '/element/' + this.elementId + '/';
+  }
+
+  // get text()
+  text() {
+    return this.session.client.callSelenium(
+      this.baseUrl + 'text',
+      null,
+      'GET'
+    ).then(function (body) {
+      return body.value;
+    });
+
+  }
+
+  // not sure setters can return promises
+  // set text(value) {
+  setValue(value) {
+    return this.session.client.callSelenium(
+      this.baseUrl + 'value',
+      { value: value.split('') }
+    ).then(function (body) {
+      return body.value;
+    });
+  }
+
+  click() {
+    return this.session.client.callSelenium(
+      this.baseUrl + 'click',
+      { }
+    ).then(function (body) {
+      return body.value;
+    });
+  }
+}
+
 class SeleniumSession {
-  constructor(parent, sessionId, values) {
-    this.parent = parent;
+  constructor(client, sessionId, values) {
+    this.client = client;
     this.sessionId = sessionId;
     this.values = values;
   }
 
   navigate(url) {
-    return this.parent.callSelenium(
+    return this.client.callSelenium(
       '/session/' + this.sessionId + '/url',
       { url }
     );
   }
 
   url() {
-    return this.parent.callSelenium(
+    return this.client.callSelenium(
       '/session/' + this.sessionId + '/url',
       null,
       'GET'
@@ -33,13 +74,58 @@ class SeleniumSession {
   }
 
   title() {
-    return this.parent.callSelenium(
+    return this.client.callSelenium(
       '/session/' + this.sessionId + '/title',
       null,
       'GET'
     ).then(function (body) {
       return body.value;
     });
+  }
+
+  elementByName(name) {
+    return this.client.callSelenium(
+      '/session/' + this.sessionId + '/element',
+      {
+        using: 'name',
+        value: name
+      }
+    ).then((body) => {
+      return new SeleniumElement(this, body.value.ELEMENT);
+    });
+  }
+ 
+  elementById(name) {
+    return this.client.callSelenium(
+      '/session/' + this.sessionId + '/element',
+      {
+        using: 'id',
+        value: name
+      }
+    ).then((body) => {
+      return new SeleniumElement(this, body.value.ELEMENT);
+    });
+  }
+
+  elementByTagName(name) {
+    return this.client.callSelenium(
+      '/session/' + this.sessionId + '/element',
+      {
+        using: 'tag name',
+        value: name
+      }
+    ).then((body) => {
+      // {"sessionId":"de08d446efadc177ceb8b593ef97235c","status":0,"value":{"ELEMENT":"0.86702033970505-1"}}
+      return new SeleniumElement(this, body.value.ELEMENT);
+    });
+  }
+
+  destroy() {
+    return this.client.callSelenium(
+      '/session/' + this.sessionId + '/element',
+      null,
+      'DELETE'
+    )
   }
 }
 
@@ -66,7 +152,7 @@ export default class Selenium {
           }
           if (body.status) {
             if (ERRORS[body.status]) {
-              return reject(new ERRORS[body.status](body.value.message));
+              return reject(new ERRORS[body.status](options.url + ': ' + body.value.message));
             }
             /* Unhandled Error */
             return reject(new Error(body.value.message));
